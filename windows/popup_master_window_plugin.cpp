@@ -196,6 +196,18 @@ void PopupMasterWindowPlugin::ClosePopupWindow() {
     }
 }
 
+void PopupMasterWindowPlugin::ReparentFlutterView() {
+    if (flutter_view_ && IsWindow(flutter_view_)) {
+        HWND main_window = GetAncestor(registrar_->GetView()->GetNativeWindow(), GA_ROOT);
+        SetParent(flutter_view_, main_window);
+        SetWindowPos(
+                flutter_view_, nullptr, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW
+        );
+        UpdateWindow(main_window);
+    }
+}
+
 void PopupMasterWindowPlugin::HandleMethodCall(
         const flutter::MethodCall<flutter::EncodableValue> &method_call,
         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
@@ -228,19 +240,23 @@ void PopupMasterWindowPlugin::HandleMethodCall(
         result->Success(flutter::EncodableValue(true));
     }
     else if (method_call.method_name().compare("getPlatformVersion") == 0) {
-        std::ostringstream version_stream;
-        version_stream << "Windows ";
-        if (IsWindows10OrGreater()) {
-            version_stream << "10+";
-        } else if (IsWindows8OrGreater()) {
-            version_stream << "8";
-        } else if (IsWindows7OrGreater()) {
-            version_stream << "7";
-        }
-        result->Success(flutter::EncodableValue(version_stream.str()));
-    } else {
-        result->NotImplemented();
+    std::ostringstream version_stream;
+    version_stream << "Windows ";
+    
+    if (IsWindowsVersionOrGreater(10, 0, 22000)) {
+        version_stream << "11";
+    } else if (IsWindows10OrGreater()) {
+        version_stream << "10";
+    } else if (IsWindows8OrGreater()) {
+        version_stream << "8";
+    } else if (IsWindows7OrGreater()) {
+        version_stream << "7";
     }
+    
+    result->Success(flutter::EncodableValue(version_stream.str()));
+} else {
+    result->NotImplemented();
+}
 }
 
 }  // namespace popup_master_window
